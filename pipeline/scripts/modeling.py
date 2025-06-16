@@ -14,6 +14,7 @@ def modeling(
     model_joblib: Output[Artifact],
     registered_model: Output[Artifact],
     mlflow_run_id: Input[Artifact],
+    minio_endpoint:str,
     minio_access_key: str,
     minio_secret_key: str,
     mlflow_endpoint: str,

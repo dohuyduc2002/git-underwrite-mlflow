@@ -76,6 +76,8 @@ components:
           parameterType: STRING
         minio_access_key:
           parameterType: STRING
+        minio_endpoint:
+          parameterType: STRING
         minio_secret_key:
           parameterType: STRING
         mlflow_endpoint:
@@ -110,6 +112,8 @@ components:
         experiment_name:
           parameterType: STRING
         minio_access_key:
+          parameterType: STRING
+        minio_endpoint:
           parameterType: STRING
         minio_secret_key:
           parameterType: STRING
@@ -237,13 +241,13 @@ deploymentSpec:
         - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
           \ *\n\ndef modeling(\n    train_csv: Input[Dataset],\n    test_csv: Input[Dataset],\n\
           \    model_joblib: Output[Artifact],\n    registered_model: Output[Artifact],\n\
-          \    mlflow_run_id: Input[Artifact],\n    minio_access_key: str,\n    minio_secret_key:\
-          \ str,\n    mlflow_endpoint: str,\n    experiment_name: str,\n    model_name:\
-          \ str,\n    suffix: str,\n):\n    import os\n    import json \n    import\
-          \ optuna \n    import shap \n    import joblib\n    import matplotlib.pyplot\
-          \ as plt\n    import pandas as pd\n    from pathlib import Path\n    import\
-          \ mlflow, xgboost as xgb\n    from lightgbm import LGBMClassifier\n    from\
-          \ sklearn.model_selection import train_test_split\n    from sklearn.metrics\
+          \    mlflow_run_id: Input[Artifact],\n    minio_endpoint:str,\n    minio_access_key:\
+          \ str,\n    minio_secret_key: str,\n    mlflow_endpoint: str,\n    experiment_name:\
+          \ str,\n    model_name: str,\n    suffix: str,\n):\n    import os\n    import\
+          \ json \n    import optuna \n    import shap \n    import joblib\n    import\
+          \ matplotlib.pyplot as plt\n    import pandas as pd\n    from pathlib import\
+          \ Path\n    import mlflow, xgboost as xgb\n    from lightgbm import LGBMClassifier\n\
+          \    from sklearn.model_selection import train_test_split\n    from sklearn.metrics\
           \ import accuracy_score, classification_report\n\n    os.environ[\"MLFLOW_S3_ENDPOINT_URL\"\
           ] = f\"http://{minio_endpoint}\"\n    os.environ[\"AWS_ACCESS_KEY_ID\"]\
           \ = minio_access_key\n    os.environ[\"AWS_SECRET_ACCESS_KEY\"] = minio_secret_key\n\
@@ -333,36 +337,37 @@ deploymentSpec:
           \ *\n\ndef preprocess(\n    train_csv: Input[Dataset],\n    test_csv: Input[Dataset],\n\
           \    transformer_joblib: Output[Artifact],\n    output_train_csv: Output[Dataset],\n\
           \    output_test_csv: Output[Dataset],\n    mlflow_run_id: Output[Artifact],\n\
-          \    minio_access_key: str,\n    minio_secret_key: str,\n    mlflow_endpoint:\
-          \ str,\n    parent_run_name: str,\n    n_features_to_select: str,\n    experiment_name:\
-          \ str,\n):\n\n    import os\n    import pandas as pd\n    import numpy as\
-          \ np\n    import joblib\n    from pathlib import Path\n    import mlflow\n\
-          \    from optbinning import BinningProcess\n    from sklearn.feature_selection\
-          \ import SelectKBest, f_classif\n\n    os.environ[\"MLFLOW_S3_ENDPOINT_URL\"\
-          ] = f\"http://{minio_endpoint}\"\n    os.environ[\"AWS_ACCESS_KEY_ID\"]\
-          \ = minio_access_key\n    os.environ[\"AWS_SECRET_ACCESS_KEY\"] = minio_secret_key\n\
-          \    os.environ[\"MLFLOW_ENDPOINT\"] = f\"http://{mlflow_endpoint}\"\n\n\
-          \    # Data processing functions\n\n    def get_lists(df):\n        numeric\
-          \ = df.select_dtypes(include=[\"int64\", \"float64\"]).columns.tolist()\n\
-          \        category = df.select_dtypes(include=[\"object\"]).columns.tolist()\n\
-          \        for column in (\"SK_ID_CURR\", \"TARGET\"):\n            if column\
-          \ in numeric:\n                numeric.remove(column)\n        return category,\
-          \ numeric\n\n    def iv_score(bins, y):\n        df = pd.DataFrame({\"bins\"\
-          : bins, \"target\": y})\n        total_good, total_bad = (df.target == 0).sum(),\
-          \ (df.target == 1).sum()\n        score = 0\n        for _, goods in df.groupby(\"\
-          bins\"):\n            good = (goods.target == 0).sum() or 0.5\n        \
-          \    bad = (goods.target == 1).sum() or 0.5\n            score += (good\
-          \ / total_good - bad / total_bad) * np.log(\n                (good / total_good)\
-          \ / (bad / total_bad)\n            )\n        return score\n\n    def select_survivors(\n\
-          \        df_train, cat_cols, num_cols, iv_min=0.02, iv_max=0.5, missing_thres=0.1\n\
-          \    ):\n        y = df_train[\"TARGET\"]\n        X_train = df_train.drop(\"\
-          TARGET\", axis=1)\n        survivors = []\n        for feature in cat_cols\
-          \ + num_cols:\n            missing_rate = X_train[feature].isna().mean()\n\
-          \            if missing_rate > missing_thres:\n                continue\
-          \  # Exclude features with more than 10% missing values\n\n            #\
-          \ Calulate iv scoore by using quantile cut if large bin or\n           \
-          \ if feature in cat_cols:\n                # pd.factorize for categorical\
-          \ features to label encode them\n                bins = pd.factorize(X_train[feature].fillna(\"\
+          \    minio_endpoint:str,\n    minio_access_key: str,\n    minio_secret_key:\
+          \ str,\n    mlflow_endpoint: str,\n    parent_run_name: str,\n    n_features_to_select:\
+          \ str,\n    experiment_name: str,\n):\n\n    import os\n    import pandas\
+          \ as pd\n    import numpy as np\n    import joblib\n    from pathlib import\
+          \ Path\n    import mlflow\n    from optbinning import BinningProcess\n \
+          \   from sklearn.feature_selection import SelectKBest, f_classif\n\n   \
+          \ os.environ[\"MLFLOW_S3_ENDPOINT_URL\"] = f\"http://{minio_endpoint}\"\n\
+          \    os.environ[\"AWS_ACCESS_KEY_ID\"] = minio_access_key\n    os.environ[\"\
+          AWS_SECRET_ACCESS_KEY\"] = minio_secret_key\n    os.environ[\"MLFLOW_ENDPOINT\"\
+          ] = f\"http://{mlflow_endpoint}\"\n\n    # Data processing functions\n\n\
+          \    def get_lists(df):\n        numeric = df.select_dtypes(include=[\"\
+          int64\", \"float64\"]).columns.tolist()\n        category = df.select_dtypes(include=[\"\
+          object\"]).columns.tolist()\n        for column in (\"SK_ID_CURR\", \"TARGET\"\
+          ):\n            if column in numeric:\n                numeric.remove(column)\n\
+          \        return category, numeric\n\n    def iv_score(bins, y):\n      \
+          \  df = pd.DataFrame({\"bins\": bins, \"target\": y})\n        total_good,\
+          \ total_bad = (df.target == 0).sum(), (df.target == 1).sum()\n        score\
+          \ = 0\n        for _, goods in df.groupby(\"bins\"):\n            good =\
+          \ (goods.target == 0).sum() or 0.5\n            bad = (goods.target == 1).sum()\
+          \ or 0.5\n            score += (good / total_good - bad / total_bad) * np.log(\n\
+          \                (good / total_good) / (bad / total_bad)\n            )\n\
+          \        return score\n\n    def select_survivors(\n        df_train, cat_cols,\
+          \ num_cols, iv_min=0.02, iv_max=0.5, missing_thres=0.1\n    ):\n       \
+          \ y = df_train[\"TARGET\"]\n        X_train = df_train.drop(\"TARGET\",\
+          \ axis=1)\n        survivors = []\n        for feature in cat_cols + num_cols:\n\
+          \            missing_rate = X_train[feature].isna().mean()\n           \
+          \ if missing_rate > missing_thres:\n                continue  # Exclude\
+          \ features with more than 10% missing values\n\n            # Calulate iv\
+          \ scoore by using quantile cut if large bin or\n            if feature in\
+          \ cat_cols:\n                # pd.factorize for categorical features to\
+          \ label encode them\n                bins = pd.factorize(X_train[feature].fillna(\"\
           missing\"))[0]\n            else:\n                # if numeric feature\
           \ has more than is high cardinal (more than 10) use qcut, else use cut with\
           \ quantile is the nunique value\n                if X_train[feature].nunique()\
@@ -393,7 +398,7 @@ deploymentSpec:
           \ pd.DataFrame(selector.transform(df_train_binned), columns=keep)\n    \
           \    out_test = pd.DataFrame(selector.transform(df_test_binned), columns=keep)\n\
           \        out_train[\"TARGET\"] = y\n        return selector, out_train,\
-          \ out_test\n\n    # ========== Pipeline ==========\n    df_train = pd.read_csv(train_csv.path)\n\
+          \ out_test\n\n\n    # ========== Pipeline ==========\n    df_train = pd.read_csv(train_csv.path)\n\
           \    df_test = pd.read_csv(test_csv.path)\n\n    cat_cols, num_cols = get_lists(df_train)\n\
           \    survivors = select_survivors(df_train, cat_cols, num_cols)\n    y =\
           \ df_train[\"TARGET\"]\n    X_train, X_test = df_train.drop(\"TARGET\",\
@@ -411,7 +416,12 @@ deploymentSpec:
           , artifact_path=\"prep\")\n        mlflow.log_artifact(\"/tmp/output_train.csv\"\
           , artifact_path=\"prep\")\n        mlflow.log_artifact(\"/tmp/output_test.csv\"\
           , artifact_path=\"prep\")\n\n    Path(mlflow_run_id.path).parent.mkdir(parents=True,\
-          \ exist_ok=True)\n    Path(mlflow_run_id.path).write_text(parent_id)\n\n"
+          \ exist_ok=True)\n    Path(mlflow_run_id.path).write_text(parent_id)\n\n\
+          \    # save to KFP artifact\n    Path(transformer_joblib.path).parent.mkdir(parents=True,\
+          \ exist_ok=True)\n    joblib.dump(\n        {\"opt_binning_process\": opt_binning_process,\
+          \ \"selector\": selector},\n        transformer_joblib.path,\n    )\n  \
+          \  out_train.to_csv(output_train_csv.path, index=False)\n    out_test.to_csv(output_test_csv.path,\
+          \ index=False)\n\n"
         image: microwave1005/scipy-img:latest
 pipelineInfo:
   description: "Download raw \u2192 preprocess \u2192 download processed \u2192 train\
@@ -484,6 +494,8 @@ root:
               componentInputParameter: experiment_name
             minio_access_key:
               componentInputParameter: minio_access_key
+            minio_endpoint:
+              componentInputParameter: minio_endpoint
             minio_secret_key:
               componentInputParameter: minio_secret_key
             mlflow_endpoint:
@@ -517,6 +529,8 @@ root:
               componentInputParameter: experiment_name
             minio_access_key:
               componentInputParameter: minio_access_key
+            minio_endpoint:
+              componentInputParameter: minio_endpoint
             minio_secret_key:
               componentInputParameter: minio_secret_key
             mlflow_endpoint:

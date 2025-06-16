@@ -50,6 +50,7 @@ def underwriting_pipeline(
     prep = preprocess_op(
         train_csv=raw_tr.outputs["output"],
         test_csv= raw_te.outputs["output"],
+        minio_endpoint=minio_endpoint,
         minio_access_key=minio_access_key,
         minio_secret_key=minio_secret_key,
         mlflow_endpoint=mlflow_endpoint,
@@ -64,6 +65,7 @@ def underwriting_pipeline(
         train_csv=prep.outputs["output_train_csv"],
         test_csv=prep.outputs["output_test_csv"],
         mlflow_run_id=prep.outputs["mlflow_run_id"],
+        minio_endpoint=minio_endpoint,
         minio_access_key=minio_access_key,
         minio_secret_key=minio_secret_key,
         model_name=model_name,

@@ -15,6 +15,7 @@ def preprocess(
     output_train_csv: Output[Dataset],
     output_test_csv: Output[Dataset],
     mlflow_run_id: Output[Artifact],
+    minio_endpoint:str,
     minio_access_key: str,
     minio_secret_key: str,
     mlflow_endpoint: str,
@@ -124,6 +125,7 @@ def preprocess(
         out_train["TARGET"] = y
         return selector, out_train, out_test
 
+
     # ========== Pipeline ==========
     df_train = pd.read_csv(train_csv.path)
     df_test = pd.read_csv(test_csv.path)
@@ -157,6 +159,15 @@ def preprocess(
 
     Path(mlflow_run_id.path).parent.mkdir(parents=True, exist_ok=True)
     Path(mlflow_run_id.path).write_text(parent_id)
+
+    # save to KFP artifact
+    Path(transformer_joblib.path).parent.mkdir(parents=True, exist_ok=True)
+    joblib.dump(
+        {"opt_binning_process": opt_binning_process, "selector": selector},
+        transformer_joblib.path,
+    )
+    out_train.to_csv(output_train_csv.path, index=False)
+    out_test.to_csv(output_test_csv.path, index=False)
 
 
 if __name__ == "__main__":

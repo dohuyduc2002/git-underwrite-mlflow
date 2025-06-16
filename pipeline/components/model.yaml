@@ -3,6 +3,7 @@
 # Inputs:
 #    experiment_name: str
 #    minio_access_key: str
+#    minio_endpoint: str
 #    minio_secret_key: str
 #    mlflow_endpoint: str
 #    mlflow_run_id: system.Artifact
@@ -34,6 +35,8 @@ components:
         experiment_name:
           parameterType: STRING
         minio_access_key:
+          parameterType: STRING
+        minio_endpoint:
           parameterType: STRING
         minio_secret_key:
           parameterType: STRING
@@ -83,13 +86,13 @@ deploymentSpec:
         - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
           \ *\n\ndef modeling(\n    train_csv: Input[Dataset],\n    test_csv: Input[Dataset],\n\
           \    model_joblib: Output[Artifact],\n    registered_model: Output[Artifact],\n\
-          \    mlflow_run_id: Input[Artifact],\n    minio_access_key: str,\n    minio_secret_key:\
-          \ str,\n    mlflow_endpoint: str,\n    experiment_name: str,\n    model_name:\
-          \ str,\n    suffix: str,\n):\n    import os\n    import json \n    import\
-          \ optuna \n    import shap \n    import joblib\n    import matplotlib.pyplot\
-          \ as plt\n    import pandas as pd\n    from pathlib import Path\n    import\
-          \ mlflow, xgboost as xgb\n    from lightgbm import LGBMClassifier\n    from\
-          \ sklearn.model_selection import train_test_split\n    from sklearn.metrics\
+          \    mlflow_run_id: Input[Artifact],\n    minio_endpoint:str,\n    minio_access_key:\
+          \ str,\n    minio_secret_key: str,\n    mlflow_endpoint: str,\n    experiment_name:\
+          \ str,\n    model_name: str,\n    suffix: str,\n):\n    import os\n    import\
+          \ json \n    import optuna \n    import shap \n    import joblib\n    import\
+          \ matplotlib.pyplot as plt\n    import pandas as pd\n    from pathlib import\
+          \ Path\n    import mlflow, xgboost as xgb\n    from lightgbm import LGBMClassifier\n\
+          \    from sklearn.model_selection import train_test_split\n    from sklearn.metrics\
           \ import accuracy_score, classification_report\n\n    os.environ[\"MLFLOW_S3_ENDPOINT_URL\"\
           ] = f\"http://{minio_endpoint}\"\n    os.environ[\"AWS_ACCESS_KEY_ID\"]\
           \ = minio_access_key\n    os.environ[\"AWS_SECRET_ACCESS_KEY\"] = minio_secret_key\n\
@@ -183,6 +186,8 @@ root:
               componentInputParameter: experiment_name
             minio_access_key:
               componentInputParameter: minio_access_key
+            minio_endpoint:
+              componentInputParameter: minio_endpoint
             minio_secret_key:
               componentInputParameter: minio_secret_key
             mlflow_endpoint:
@@ -211,6 +216,8 @@ root:
       experiment_name:
         parameterType: STRING
       minio_access_key:
+        parameterType: STRING
+      minio_endpoint:
         parameterType: STRING
       minio_secret_key:
         parameterType: STRING
